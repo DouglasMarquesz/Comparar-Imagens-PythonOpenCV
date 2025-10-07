@@ -1,0 +1,1 @@
+#Algoritmo para tratar imagens e cadastrar no banco de dados

@@ -1,50 +1,39 @@
-#Algoritmo para tratar imagens e cadastrar no banco de dados
 import cv2
 import numpy as np
 
-# Carrega a imagem e converter para cinza
-img_gray = cv2.imread('imagens\entrada.jpg', cv2.IMREAD_GRAYSCALE)  # coloque o caminho correto
+# Carrega a imagem em cinza
+img_gray = cv2.imread('imagens/entrada.jpg', cv2.IMREAD_GRAYSCALE)
 
-# Alterar formato da imagem para 300x200
+# Redimensiona a imagem
 img_gray = cv2.resize(img_gray, (1280, 720))  # largura x altura
 
-img = cv2.GaussianBlur(img_gray,(3,3),0)
+# Aplica blur para reduzir ruído
+img_blur = cv2.GaussianBlur(img_gray, (3,3), 0)
 
-# Melhorar o constraste
-img = cv2.convertScaleAbs(img, alpha=1.5, beta=-90)
+# Ajusta contraste e brilho
+img_enhanced = cv2.convertScaleAbs(img_blur, alpha=1.5, beta=-90)
 
+# Filtro de nitidez
 kernel = np.array([[0, -1, 0],
                    [-1, 5, -1],
-                   [0, -1, 0]])  # Kernel de nitidez
+                   [0, -1, 0]])
+img_sharp = cv2.filter2D(img_enhanced, -1, kernel)
 
-img = cv2.filter2D(img, -1, kernel)
+# Detecta bordas
+bordas = cv2.Canny(img_sharp, 50, 150)
 
-bordas = cv2.Canny(img, 50, 150)
-# Encontra os contornos
+# Encontra contornos
 contornos, _ = cv2.findContours(bordas, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-# Desenha os contornos (espessura 3, cor preta)
-cv2.drawContours(img, contornos, -1, (0, 0, 0), 3)
+# Cria imagem branca para desenhar os contornos
+img_result = np.ones_like(img_gray) * 255  # fundo branco
 
-# Deixar o cinza mais proximo ao preto
-# Aplica um threshold adaptativo para separar objeto do fundo
-# Pixels claros (fundo) se tornam 255, pixels escuros (objeto) se tornam 0
-_, binary = cv2.threshold(img, 210, 255, cv2.THRESH_BINARY_INV)
+# Desenha apenas os contornos em preto
+cv2.drawContours(img_result, contornos, -1, 0, 4)  # 0 = preto, 2 = espessura
 
-# Cria a imagem resultado: objeto preto, fundo branco
-img_result = np.zeros_like(img)
-img_result[:] = 255  # fundo branco
-img_result[binary == 255] = 0  # objeto preto
+# Mostra e salva a imagem final
+cv2.imshow('Contornos', img_result)
+cv2.imwrite("dados/imagem_final.jpg", img_result)
 
-# Mostra a imagem em uma janela
-cv2.imshow('Imagem Final',img_result)
-
-# Salvar imagem
-# Salva o resultado
-cv2.imwrite("dados\imagem_final.jpg", img_result)
-
-# Espera até que uma tecla seja pressionada
 cv2.waitKey(0)
-
-# Fecha todas as janelas
 cv2.destroyAllWindows()
